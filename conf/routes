@@ -1,0 +1,5 @@
+# Routes
+
+GET     /                           controllers.FrontPageController.index
+GET     /health                     controllers.ManagementController.isHealthy()
+GET     /metrics                    controllers.ManagementController.fetchMetrics()

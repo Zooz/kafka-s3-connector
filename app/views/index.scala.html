@@ -1,0 +1,274 @@
+@this(conf: play.api.Configuration)
+@(lastFlushTime: String, nextFlushTime: String, partitionsStatus:
+Seq[com.zooz.kafkas3connector.kafka.offsets.PartitionStatus])
+
+<html>
+
+<head>
+   <title>Kafka to S3 Connector</title>
+
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"></script>
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"></script>
+   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+      integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+   <style>
+      .navbar {
+         /* background-image: linear-gradient(142deg, #00041a, #00126b); */
+         background-image: linear-gradient(142deg, #081248, #013152);
+      }
+
+      .header i {
+         padding-right: 20px;
+      }
+
+      .header span {
+         font-size: 30px;
+      }
+
+      .table-container {
+         width: 100%;
+         padding: 50px 0;
+      }
+
+      .table-container.grey {
+         background-color: #f7f7f77a;
+      }
+
+      .table-container .title {
+         text-align: center;
+         font-size: 25px;
+         padding-bottom: 15px;
+         font-family: fantasy;
+      }
+
+      .table-container .centralized {
+         margin: 0 auto;
+         width: 50%;
+      }
+
+      .table-container .centralized.small {
+         width: 30%;
+      }
+
+      .table-container .centralized .center {
+         text-align: center
+      }
+
+      .table-container .centralized .note {
+         text-align: center;
+         font-size: small;
+         color: #820000;
+      }
+   </style>
+</head>
+
+<body>
+   <!--Header-->
+   <div class="navbar navbar-dark shadow-sm">
+      <div class="container d-flex justify-content-center">
+         <div class="header navbar-brand d-flex align-items-center">
+            <i class="fas fa-project-diagram"></i>
+            <span><strong>Kafka to S3 Connector</strong></span>
+         </div>
+      </div>
+   </div>
+
+   <!--Input/Output-->
+   <div class="table-container">
+      <div class="title">Input/Output</div>
+      <div class="centralized">
+         <table class="table">
+            <thead>
+               <tr>
+                  <th scope="col">Kafka Host</th>
+                  <th scope="col">Kafka Topic</th>
+                  <th scope="col">S3 Bucket</th>
+                  <th scope="col">S3 Root Path</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr>
+                  <td scope="row">@conf.get[String]("kafka.host")</td>
+                  <td>@conf.get[String]("kafka.topic")</td>
+                  <td>@conf.get[String]("s3.bucket")</td>
+                  <td>@conf.getOptional[String]("s3.root_path").getOrElse("/")</td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+   <!--Topic Partitions-->
+   <div class="table-container grey">
+      <div class="title">Topic Partitions:</div>
+      <div class="centralized">
+         <table class="table">
+            <thead>
+               <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Offset Read</th>
+                  <th scope="col">Latest Offset</th>
+                  <th scope="col">Lag</th>
+               </tr>
+            </thead>
+            <tbody>
+               @for(partitionStatus <- partitionsStatus) { <tr>
+                  <td scope="row">@partitionStatus.partition</td>
+                  <td>@partitionStatus.offsetRead</td>
+                  <td>@partitionStatus.lastOffset</td>
+                  <td>@partitionStatus.lag</td>
+                  </tr>
+                  }
+            </tbody>
+         </table>
+         <p class="note"><em>(Displaying the first 20 partitions managed by this instance)</em></p>
+      </div>
+   </div>
+
+   <!--Buffer Flushes to S3-->
+   <div class="table-container">
+      <div class="title">Buffer Flushes to S3</div>
+      <div class="centralized">
+         <table class="table center">
+            <thead>
+               <tr>
+                  <th scope="col">Last Flush Time</th>
+                  <th scope="col">Next Flush Time</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr>
+                  <td scope="row">@lastFlushTime</td>
+                  <td>@nextFlushTime</td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+   <!--Service Parameters:-->
+   <div class="table-container grey">
+      <div class="title">Service Parameters</div>
+      <div class="centralized">
+         <table class="table">
+            <thead>
+               <tr>
+                  <th scope="col">Parameter</th>
+                  <th scope="col">Value</th>
+                  <th scope="col">Default</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr>
+                  <td>app.id</td>
+                  <td>@conf.get[String]("app.id")</td>
+                  <td>&nbsp;</td>
+               </tr>
+               <tr>
+                  <td>app.flush_interval_min</td>
+                  <td>@conf.get[Int]("app.flush_interval_min")</td>
+                  <td><strong>15</strong></td>
+               </tr>
+               <tr>
+                  <td>app.max_flush_retries</td>
+                  <td>@conf.get[Int]("app.max_flush_retries")</td>
+                  <td><strong>5</strong></td>
+               </tr>
+               <tr>
+                  <td>app.buffers_local_dir</td>
+                  <td>@conf.get[String]("app.buffers_local_dir")</td>
+                  <td><strong>/tmp</strong></td>
+               </tr>
+               <tr>
+                  <td>app.number_of_flush_workers</td>
+                  <td>@conf.get[Int]("app.number_of_flush_workers")</td>
+                  <td><strong>10</strong></td>
+               </tr>
+               <tr>
+                  <td>app.flush_timeout_seconds</td>
+                  <td>@conf.get[Int]("app.flush_timeout_seconds")</td>
+                  <td><strong>300</strong></td>
+               </tr>
+               <tr>
+                  <td>app.compress_type</td>
+                  <td>@conf.getOptional[String]("app.compress_type").getOrElse(" ")</td>
+                  <td>&nbsp;</td>
+               </tr>
+               <tr>
+                  <td>app.use_cache</td>
+                  <td>@conf.get[Boolean]("app.use_cache")</td>
+                  <td><strong>false</strong></td>
+               </tr>
+               <tr>
+                  <td>app.buffer_size_bytes</td>
+                  <td>@conf.get[Long]("app.buffer_size_bytes")</td>
+                  <td><strong>1048576</strong></td>
+               </tr>
+               <tr>
+                  <td>app.microbatch_interval_ms</td>
+                  <td>@conf.get[Long]("app.microbatch_interval_ms")</td>
+                  <td><strong>10</strong></td>
+               </tr>
+               <tr>
+                  <td>app.process_loop_timeout_seconds</td>
+                  <td>@conf.get[Int]("app.process_loop_timeout_seconds")</td>
+                  <td><strong>300</strong></td>
+               </tr>
+               <tr>
+                  <td>app.shutdown_abort_timeout_seconds</td>
+                  <td>@conf.get[Int]("app.shutdown_abort_timeout_seconds")</td>
+                  <td><strong>30</strong></td>
+               </tr>
+               <tr>
+                  <td>kafka.healthy_lag</td>
+                  <td>@conf.get[Int]("kafka.healthy_lag")</td>
+                  <td><strong>500</strong></td>
+               </tr>
+               <tr>
+                  <td>kafka.max_poll_records</td>
+                  <td>@conf.get[Int]("kafka.max_poll_records")</td>
+                  <td><strong>1000</strong></td>
+               </tr>
+               <tr>
+                  <td>kafka.default_startpoint</td>
+                  <td>@conf.get[String]("kafka.default_startpoint")</td>
+                  <td><strong>latest</strong></td>
+               </tr>
+               <tr>
+                  <td>s3.upload_threads_per_file</td>
+                  <td>@conf.get[Int]("s3.upload_threads_per_file")</td>
+                  <td><strong>2</strong></td>
+               </tr>
+               <tr>
+                  <td>s3.multipart_threshold_mb</td>
+                  <td>@conf.get[Int]("s3.multipart_threshold_mb")</td>
+                  <td><strong>15</strong></td>
+               </tr>
+               <tr>
+                  <td>s3.extension</td>
+                  <td>@conf.get[String]("s3.extension")</td>
+                  <td><strong>json</strong></td>
+               </tr>
+               <tr>
+                  <td>s3.region</td>
+                  <td>@conf.get[String]("s3.region")</td>
+                  <td><strong>us-east-1</strong></td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+</body>
+
+</html>
