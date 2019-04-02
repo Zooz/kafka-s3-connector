@@ -1,2 +1,14 @@
-*.class
-*.log
+logs
+target
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+/RUNNING_PID
+/bin/
+.cache-main
+/.cache-tests
+/.scalastyle
+.bloop/
+.metals/
