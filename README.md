@@ -257,5 +257,5 @@ Check the implementation of the `com.zooz.kafkas3connector.health.KafkaHealthChe
 
 ## Maintainers
 The current maintainers (people who can merge pull requests) are:
-* [NoamGutHub](https://github.com/NoamGitHub)
+* [NoamGitHub](https://github.com/NoamGitHub)
 * [guybiecher](https://github.com/guybiecher)
