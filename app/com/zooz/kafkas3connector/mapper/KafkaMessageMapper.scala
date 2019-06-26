@@ -3,10 +3,13 @@ package com.zooz.kafkas3connector.mapper
 import com.zooz.kafkas3connector.kafka.KafkaMessage
 import play.api.Logger
 import java.nio.ByteBuffer
+import play.api.Configuration
 
 /** A parent trait for all Kafka Message Mappers */
-trait KafkaMessageMapper {
+abstract class KafkaMessageMapper(conf: Configuration) {
   protected lazy val logger = Logger(this.getClass())
+  protected lazy val skipCorruptedMessages: Boolean = 
+    conf.get[Boolean]("app.skip_corrupted_messages")
   
   /** Transforms a given kafka message value to zero or more output strings */
   def transformMessage(byteBuffer: ByteBuffer): Seq[ByteBuffer]
@@ -35,7 +38,12 @@ trait KafkaMessageMapper {
           case e: Exception =>
             val errMsg = s"Caught exception while trying to map message:\n$message"
             logger.error(errMsg, e)
-            throw new IllegalArgumentException(errMsg)
+            if (skipCorruptedMessages) {
+              logger.info("Skipping corrupted message...")
+              None
+            } else {
+              throw new IllegalArgumentException(errMsg)
+            }
         }
     }
   }
