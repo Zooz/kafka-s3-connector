@@ -23,6 +23,9 @@ class S3Client(conf: Configuration) {
   private val region: String = conf.get[String]("s3.region")
   private val endpoint: Option[String] = conf.getOptional[String]("s3._endpoint")
   private val appId: String = conf.get[String]("app.id").replace("/", "_")
+  private val s3RootParam: Option[String] = conf.getOptional[String]("s3.root_path")
+  private val s3Root: String = 
+    if (s3RootParam.isDefined) s3RootParam.get.stripSuffix("/") + "/" else ""
   protected val logger = Logger(this.getClass())
 
   private val s3ClientBuilder = AmazonS3ClientBuilder
@@ -54,15 +57,15 @@ class S3Client(conf: Configuration) {
    */
   def uploadFileToS3(s3FilePath: String, file: File): Unit = {
     try {
-      val filePathWithAppId = s"$appId/$s3FilePath"
+      val fullS3Path = s"${s3Root}${appId}/${s3FilePath}"
       val putObjectRequest: PutObjectRequest =
-        new PutObjectRequest(bucket, filePathWithAppId, file.toJava)
+        new PutObjectRequest(bucket, fullS3Path, file.toJava)
       putObjectRequest.setGeneralProgressListener(createProgressListener())
 
-      logger.info(s"uploading file = [$filePathWithAppId] to bucket = [$bucket] , file size = ${file.size} bytes") // scalastyle:ignore
+      logger.info(s"uploading file = [$fullS3Path] to bucket = [$bucket] , file size = ${file.size} bytes") // scalastyle:ignore
       val upload: Upload = transferManager.upload(putObjectRequest)
       upload.waitForCompletion()
-      logger.info(s"finish to upload [${filePathWithAppId}] to s3 ")
+      logger.info(s"finish to upload [${fullS3Path}] to s3 ")
     } catch {
       case e: Exception =>
         logger.error(
