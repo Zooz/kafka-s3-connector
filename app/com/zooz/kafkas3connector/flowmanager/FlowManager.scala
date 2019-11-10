@@ -50,6 +50,7 @@ class FlowManager @Inject() (
   val TRANSACTION_TIMEOUT = 10 seconds
 
   private val microBatchIntervalMs: Int = conf.get[Int]("app.microbatch_interval_ms")
+  private val microBatchIntervalDuration: FiniteDuration = microBatchIntervalMs.milliseconds
   private val flushIntervalMs: Long =
     conf.getOptional[Long]("app.flush_interval_ms").getOrElse(
       conf.get[Long]("app.flush_interval_min") * 60L * 1000L)
@@ -63,7 +64,7 @@ class FlowManager @Inject() (
    *  main receive loop
    */
   override def receive: Receive = {
-    self ! ProcessNewMessages // First message to process is to fetch new messages from Kafka
+    scheduleNextBatch // First message to process is to fetch new messages from Kafka
 
     mainReceive(
       DateTime.now(),
@@ -112,7 +113,7 @@ class FlowManager @Inject() (
         bufferMessagesAndUpdateOffsets(messages)
 
         // Scheduling the next polling of Kafka
-        self ! ProcessNewMessages
+        scheduleNextBatch
 
         unstashAll()  // Unstashing any pending Shutdown request, if such exists
         context.become(mainReceive(
@@ -267,6 +268,12 @@ class FlowManager @Inject() (
    */
   private def scheduleNextFlush: Cancellable =
     context.system.scheduler.scheduleOnce(flushIntervalMs milliseconds, self, InitiateFlush)
+
+  /**
+   * Schedules another batch of message processing
+   */
+  private def scheduleNextBatch: Cancellable =
+    context.system.scheduler.scheduleOnce(microBatchIntervalDuration, self, ProcessNewMessages)
 
   /** A wrapper around the messageMapper method to properly catch and handle map exceptions */
   private def mapMessagesOrKill(messages: Seq[KafkaMessage]): Seq[KafkaMessage] = {
